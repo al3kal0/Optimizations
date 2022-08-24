@@ -7,7 +7,7 @@ namespace Optimization
     {
         int size;
         int genes;
-        Random rand = new Random();
+        Random rand = new();
 
         public OnePointCrossover()
         {
@@ -22,120 +22,70 @@ namespace Optimization
         {
             // one half of mating pool stores parents
             // while the other half stores offsprings; 
-            T[] matingpool = (T[])algorithm.MatingPool;
+            var matingpool = algorithm.Matingpool;
             int mean = matingpool.Length / 2;
-            Span<T> parents = new Span<T>(matingpool, 0, mean);
-            Span<T> offsprings = new Span<T>(matingpool, mean, mean);
+            var parents = matingpool[0..mean];
+            var offsprings = matingpool[mean..];
 
             if(parents.Length != offsprings.Length) throw new Exception("mating pool should split in half");
 
             for(int i = 0; i < parents.Length; i += 2)
             {    
-                (T offspringA, T offspringB) = Crossover(parents[i], parents[i + 1]);
-                offsprings[i] = offspringA;
-                offsprings[i + 1] = offspringB;
-            }
-        }
-
-        private unsafe (T, T) Crossover(T parentA, T parentB)
-        {
-            T offspringA = default;
-            T offspringB = default;          
-
-            double* ptrA = (double*)&parentA;
-            double* ptrB = (double*)&parentB;
-            double* ofspA = (double*)&offspringA;
-            double* ofspB = (double*)&offspringB;
-
-            do
-            {
-                offspringA = parentA;
-                offspringB = parentB;   
-                int point = rand.Next(1, genes - 1);
+                var point = rand.Next(1, genes - 1);
+                ref var parentA = ref parents[i + 0];
+                ref var parentB = ref parents[i + 1];
+                ref var offspringA = ref offsprings[i + 0];
+                ref var offspringB = ref offsprings[i + 1];
                 
-                for(int i = point; i < genes; i++)
+                for(int j = point; j < genes; j++)
                 {
-                    ofspA[i] = ptrB[i];
-                    ofspB[i] = ptrA[i];
+                    offspringA[j] = parentB[j];
+                    offspringB[j] = parentA[j];
                 }
-
-            }while(IChromosome.CheckEqualityUnsafe<T>(&parentA, &offspringA, genes)
-                || IChromosome.CheckEqualityUnsafe<T>(&parentB, &offspringB, genes)
-                || IChromosome.CheckEqualityUnsafe<T>(&offspringA, &offspringB, genes));
-
-            return (offspringA, offspringB);
-        }
-
-        [Test]
-        internal unsafe static (bool, string) TestOnePointCrossover()
-        {      
-            var rand = new Random();            
-            var crossover = new OnePointCrossover<Chromosome>();
-            var msg = new StringBuilder(1000);
-            var eq = true;
-            
-            for(int i = 0; i < 20; i++)
-            {
-                var A = Chromosome.InitRandom(rand);
-                var B = Chromosome.InitRandom(rand);
-                (Chromosome offA, Chromosome offB) = crossover.Crossover(A, B);
-                
-                if(Chromosome.CheckEqualityUnsafe(&A, &offA)
-                    || Chromosome.CheckEqualityUnsafe(&A, &offB)
-                    || Chromosome.CheckEqualityUnsafe(&B, &offA)
-                    || Chromosome.CheckEqualityUnsafe(&B, &offB)
-                    || Chromosome.CheckEqualityUnsafe(&offA, &offB)
-                    || !offA.Constrained()
-                    || !offB.Constrained())
-                    {
-                        eq = false;
-                        msg.AppendLine("parentA: " + A.ToString());
-                        msg.AppendLine("parentB: " + B.ToString());
-                        msg.AppendLine("offspringA: " + offA.ToString());
-                        msg.AppendLine("offspringB: " + offB.ToString());
-                        msg.AppendLine();
-                    }
             }
-
-            return (eq, msg.ToString());
         }
     }
+
+      
 
     public class MultiPointCrossover<T> : ICrossover<T> where T: unmanaged, IChromosome
     {
         public void RunStep(GeneticAlg<T> algorith)
         {
-            throw new NotImplementedException();   
-        }
+            // one half of mating pool stores parents
+            // while the other half stores offsprings; 
+            var matingpool = algorithm.Matingpool;
+            int mean = matingpool.Length / 2;
+            var parents = matingpool[0..mean];
+            var offsprings = matingpool[mean..];
 
-        // [Test]
-        // internal unsafe static (bool, string) TestMultiPointCrossover()
-        // {      
-        //     var rand = new Random();            
-        //     var crossover = new MultiPointCrossover<Chromosome>();
-        //     var msg = new StringBuilder(1000);
-        //     var eq = true;
-            
-        //     for(int i = 0; i < 5; i++)
-        //     {
-        //         var A = Chromosome.InitRandom(rand);
-        //         var B = Chromosome.InitRandom(rand);
-        //         (Chromosome offA, Chromosome offB) = crossover.Crossover(A, B, rand.Next(Chromosome.Genes));
-        //         msg.AppendLine("parentA: " + A.ToString());
-        //         msg.AppendLine("parentB: " + B.ToString());
-        //         msg.AppendLine("offspringA: " + offA.ToString());
-        //         msg.AppendLine();
-        //         msg.AppendLine("offspringB: " + offB.ToString());
+            if(parents.Length != offsprings.Length) throw new Exception("mating pool should split in half");
 
-        //         if(Chromosome.CheckEqualityUnsafe(&A, &offA)
-        //             || Chromosome.CheckEqualityUnsafe(&A, &offB)
-        //             || Chromosome.CheckEqualityUnsafe(&B, &offA)
-        //             || Chromosome.CheckEqualityUnsafe(&B, &offB)
-        //             || Chromosome.CheckEqualityUnsafe(&offA, &offB)) eq = false;
-        //     }
+            for(int i = 0; i < parents.Length; i += 2)
+            {    
+                var point = rand.Next(1, genes - 1);
+                ref var parentA = ref parents[i + 0];
+                ref var parentB = ref parents[i + 1];
+                ref var offspringA = ref offsprings[i + 0];
+                ref var offspringB = ref offsprings[i + 1];
 
-        //     return (eq, msg.ToString());
-        // }
+                var points = stackalloc int[2];
+                points[0] = rand.Next(1, genes - 2);
+                points[1] = rand.Next(points[0], genes - 1);
+                
+                for(int j = points[0]; j < points[1]; j++)
+                {
+                    offspringA[j] = parentB[j];
+                    offspringB[j] = parentA[j];
+                }
+                
+                // for(int j = points[1]; j < genes; j++)
+                // {
+                    // offspringA[j] = parentB[j];
+                    // offspringB[j] = parentA[j];
+                // }
+            }
+        }       
     }
 
     public class UniformCrossover<T> : ICrossover<T> where T: unmanaged, IChromosome
@@ -215,39 +165,6 @@ namespace Optimization
             return (offspringA, offspringB);
         }
 
-        [Test]
-        internal unsafe static (bool, string) TestUniformCrossover()
-        {      
-            var rand = new Random();            
-            var crossover = new UniformCrossover<Chromosome>();
-            var msg = new StringBuilder(1000);
-            var eq = true;
-            
-            for(int i = 0; i < 20; i++)
-            {
-                var A = Chromosome.InitRandom(rand);
-                var B = Chromosome.InitRandom(rand);
-                (Chromosome offA, Chromosome offB) = crossover.Crossover(A, B);                
-
-                if(Chromosome.CheckEqualityUnsafe(&A, &offA)
-                    || Chromosome.CheckEqualityUnsafe(&A, &offB)
-                    || Chromosome.CheckEqualityUnsafe(&B, &offA)
-                    || Chromosome.CheckEqualityUnsafe(&B, &offB)
-                    || Chromosome.CheckEqualityUnsafe(&offA, &offB)
-                    || !offA.Constrained()
-                    || !offB.Constrained()) 
-                    {
-                        eq = false;
-                        msg.AppendLine("parentA: " + A.ToString());
-                        msg.AppendLine("parentB: " + B.ToString());
-                        msg.AppendLine("offspringA: " + offA.ToString());
-                        msg.AppendLine("offspringB: " + offB.ToString());
-                        msg.AppendLine();
-                    }
-            }
-
-            return (eq, msg.ToString());
-        }
     }    
 
     public class ArithmeticCrossover<T> : ICrossover<T> where T: unmanaged, IChromosome
@@ -313,57 +230,6 @@ namespace Optimization
 
             return (offspringA, offspringB);
         }
-
-        [Test]
-        internal unsafe static (bool, string) TestArithmeticCrossover()
-        {      
-            var rand = new Random();            
-            var crossover = new ArithmeticCrossover<Chromosome>();
-            var msg = new StringBuilder(1000);
-            var eq = true;
-            
-            for(int i = 0; i < 20; i++)
-            {
-                var A = Chromosome.InitRandom(rand);
-                var B = Chromosome.InitRandom(rand);
-                (Chromosome offA, Chromosome offB) = crossover.Crossover(A, B);
-                
-                if(Chromosome.CheckEqualityUnsafe(&A, &offA)
-                    || Chromosome.CheckEqualityUnsafe(&A, &offB)
-                    || Chromosome.CheckEqualityUnsafe(&B, &offA)
-                    || Chromosome.CheckEqualityUnsafe(&B, &offB)
-                    || Chromosome.CheckEqualityUnsafe(&offA, &offB)
-                    || !offA.Constrained()
-                    || !offB.Constrained()) 
-                    {
-                        eq = false;
-                        msg.AppendLine("parentA: " + A.ToString());
-                        msg.AppendLine("parentB: " + B.ToString());
-                        msg.AppendLine("offspringA: " + offA.ToString());
-                        msg.AppendLine("offspringB: " + offB.ToString());
-                        msg.AppendLine();
-                    }
-            }
-
-            return (eq, msg.ToString());
-        }    
     }
 
-    ///<summary> simply copies matingpool to population, no complex selecting </summary>
-    public class SetPopulation<T> : IUpdatePopulation<T> where T: IChromosome
-    {
-        public void RunStep(GeneticAlg<T> algorithm)
-        {
-            var population = algorithm.Population;
-            var matingpool = algorithm.Matingpool;
-            var generations = algorithm.PopulationGenerations;
-
-            if(population.Length != matingpool.Length) 
-                throw new Exception("population and matingpool must have same Length!!");
-
-            Array.Copy(matingpool, 0, population, 0, population.Length);
-
-            for(int i = 0; i < generations.Length; i++) generations[i] += 1;
-        }
-    }
 }

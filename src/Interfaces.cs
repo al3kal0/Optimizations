@@ -10,6 +10,7 @@ namespace Optimization
         void Repair();
         int Size { get; }
         int Genes { get; }
+        float this[int index];
     }
     
     public interface IStep<T> where T: unmanaged, IChromosome
@@ -35,5 +36,5 @@ namespace Optimization
 
     public interface IMutation<T>  : IStep<T> where T: unmanaged, IChromosome {}
 
-    public interface IUpdatePopulation<T> : IStep<T> where T: unmanaged, IChromosome {}    
+    public interface ISurvival<T> : IStep<T> where T: unmanaged, IChromosome {}    
 }

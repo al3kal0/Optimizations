@@ -6,15 +6,15 @@ namespace Optimization
     public class ProportionalSelection<T> : ISelection<T> where T: IChromosome
     {
         int[] sparseSet;
-        Random rand = new Random();
+        Random rand = new();
 
         public void RunStep(GeneticAlg<T> algorithm)
         {
             var fitness = algorithm.PopulationFitness;
             var population = algorithm.Population;
-            var matingpool = algorithm.MatingPool;
-            var parents = new Span<T>(matingpool, 0, matingpool.Length / 2);
-            sparseSet ??= new int[population.MaxSize];
+            var matingpool = algorithm.Matingpool;
+            var parents = matingpool[0..(matingpool.Length / 2)];
+            sparseSet ??= new int[population.Count];
             int count = 0;
 
             // select randomly n chromosomes to store half of matingpool
@@ -43,48 +43,9 @@ namespace Optimization
                 }
             }
         }
-
-        [Test]
-        static (bool, string) TestProportionalSelection()
-        {
-            var algorithm = new GeneticAlg<Chromosome>()
-            {
-                Population = new Population<Chromosome>(200).Init(new RandomInitialization()),
-                MatingPool = new Population<Chromosome>(200)
-            };
-            var fitness = new WSGAFitness();
-            var randomselection = new ProportionalSelection<Chromosome>();
-            var population = algorithm.Population;
-            var matingpool = algorithm.MatingPool;
-            var  eq = true;
-            var chromose = new Chromosome();
-            var msg = new System.Text.StringBuilder(1000);
-
-            fitness.RunStep(algorithm);
-            randomselection.RunStep(algorithm);
-            unsafe
-            {
-                fixed(Chromosome* ptr1 = population)
-                fixed(Chromosome* ptr2 = matingpool)
-                {
-                    for(int i = 0; i < population.Length / 2; i++)
-                    {
-                        eq &= !IChromosome.CheckEqualityUnsafe<Chromosome>(&ptr1[i], &chromose, Chromosome.Genes);
-                        eq &= !IChromosome.CheckEqualityUnsafe<Chromosome>(&ptr2[i], &chromose, Chromosome.Genes);                        
-                    }
-                    for(int i = population.Length / 2; i < population.Length; i++)
-                    {
-                        eq &= IChromosome.CheckEqualityUnsafe<Chromosome>(&ptr2[i], &chromose, Chromosome.Genes);
-                    }
-                }
-            }     
-
-            return (eq, msg.ToString());       
-        }
-    }
+       
 
     /// <summary> Selects Parents proportional to fitness, repeats might happen... </summary>
-
     public class RouletteWheelSelection<T> : ISelection<T> where T: IChromosome
     {
         Random rand = new Random();
@@ -125,7 +86,7 @@ namespace Optimization
         readonly static int[] participants_max = { 2, 4, 8, 16, 32, 64, 128, 256 };
         int maxParticipants = 16;
         int[] sparseSet;
-        Random rand = new Random();
+        Random rand = new();
         public int TournamentParticipants 
         {
             get => maxParticipants;
@@ -147,11 +108,11 @@ namespace Optimization
 
         public void RunStep(GeneticAlg<T> algorithm)
         {
-            double[] fitness = algorithm.Population.Fitness;
-            T[] population = (T[])algorithm.Population;
-            T[] matingpool = (T[])algorithm.MatingPool;
-            Span<T> parents = new Span<T>(matingpool, 0, matingpool.Length / 2);
-            Span<int> tournament = stackalloc int[maxParticipants];
+            var fitness = algorithm.PopulationFitness;
+            var population = algorithm.Population;
+            var matingpool = algorithm.Matingpool;
+            var parents = matingpool[0..(matingpool.Length / 2)];
+            var tournament = stackalloc int[maxParticipants];
             sparseSet ??= new int[population.Length];
             int count = 0;            
 
@@ -218,13 +179,13 @@ namespace Optimization
     public class RandomSelection<T> : ISelection<T> where T: IChromosome
     {
         int[] sparseSet;
-        Random rand = new Random();
+        Random rand = new();
 
         public void RunStep(GeneticAlg<T> algorithm)
         {
-            T[] population = (T[])algorithm.Population;
-            T[] matingpool = (T[])algorithm.MatingPool;
-            Span<T> parents = new Span<T>(matingpool, 0, matingpool.Length / 2);
+            var population = algorithm.Population;
+            var matingpool = algorithm.Matingpool;
+            var parents = matingpool[0, (matingpool.Length / 2)];
             sparseSet ??= new int[population.Length];
             int count = 0;
 
@@ -250,43 +211,6 @@ namespace Optimization
                     sparseSet[i] = default;
                 }
             }
-        }
-
-        [Test]
-        internal static bool TestRandomSelection()
-        {
-            var algorithm = new GeneticAlg<Chromosome>()
-            {
-                Population = new Population<Chromosome>(200).Init(new RandomInitialization()),
-                MatingPool = new Population<Chromosome>(200)
-            };
-            var fitness = new WSGAFitness();
-            var randomselection = new RandomSelection<Chromosome>();
-            var population = (Chromosome[])algorithm.Population;
-            var matingpool = (Chromosome[])algorithm.MatingPool;
-            var  eq = true;
-            var chromose = new Chromosome();
-
-            fitness.RunStep(algorithm);
-            randomselection.RunStep(algorithm);
-            unsafe
-            {
-                fixed(Chromosome* ptr1 = population)
-                fixed(Chromosome* ptr2 = matingpool)
-                {
-                    for(int i = 0; i < population.Length / 2; i++)
-                    {
-                        eq &= !IChromosome.CheckEqualityUnsafe<Chromosome>(&ptr1[i], &chromose, Chromosome.Genes);
-                        eq &= !IChromosome.CheckEqualityUnsafe<Chromosome>(&ptr2[i], &chromose, Chromosome.Genes);
-                    }
-                    for(int i = population.Length / 2; i < population.Length; i++)
-                    {
-                        eq &= IChromosome.CheckEqualityUnsafe<Chromosome>(&ptr2[i], &chromose, Chromosome.Genes);
-                    }
-                }
-            }     
-
-            return eq;       
         }
     }    
 }

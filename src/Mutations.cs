@@ -6,7 +6,7 @@ namespace Optimization
     {
         int size;
         int genes;
-        Random rand = new Random();
+        Random rand = new();
         public double MutationFactor {get; set;} = 0.1;
 
         public BitflipMutation()
@@ -21,78 +21,36 @@ namespace Optimization
         public void RunStep(GeneticAlg<T> algorithm)
         {
             var population = algorithm.Population;
-
-            unsafe
+            
+            for(int i = 0; i < population.Length; i++)
             {
-                fixed(T* ptr = population)
+                if(MutationFactor > rand.NextDouble())
                 {
-                    for(int i = 0; i < population.Length; i++)
+                    ref var chromosome = ref population[i];
+                    var temp = chromosome;
+                    byte mutation = rand.Next(7) switch
                     {
-                        if(MutationFactor > rand.NextDouble()) Mutate(&ptr[i]);
-                    }
+                        0 => 0b000_0001,
+                        1 => 0b000_0010,
+                        2 => 0b000_0100,
+                        3 => 0b000_1000,
+                        4 => 0b001_0000,
+                        5 => 0b010_0000,
+                        6 => 0b100_0000,
+                        _ => 0b000_0000
+                    };
+    
+                    int offset = rand.Next(size - sizeof(byte));
+                    unsafe
+                    {
+                        byte* ptr = (byte*)temp;
+                        ptr[offset] ^= mutation;                            
+                    }                    
+                    chromosome = temp;
+                    chromosome.Repair();
                 }
             }
-        }
-
-        unsafe void Mutate(T* chromosome)
-        {
-            T copy = *chromosome;
-            do
-            {
-                byte mutation = rand.Next(7) switch
-                {
-                    0 => 0b000_0001,
-                    1 => 0b000_0010,
-                    2 => 0b000_0100,
-                    3 => 0b000_1000,
-                    4 => 0b001_0000,
-                    5 => 0b010_0000,
-                    6 => 0b100_0000,
-                    _ => 0b000_0000
-                };
-
-                int offset = rand.Next(size - sizeof(byte));
-
-                byte* ptr = (byte*)chromosome;
-                ptr[offset] ^= mutation;
-
-            }while(IChromosome.CheckEqualityUnsafe<T>(chromosome, &copy, genes));
-
-            chromosome->Repair();
-        }
-
-        [Test]
-        static void TestBitflipMutation()
-        {            
-            const int length = 10;
-            var population = new Population<Chromosome>(length).Init(new RandomInitialization());
-            var copy = new Population<Chromosome>(length);
-            Array.Copy((Chromosome[])population, 0, (Chromosome[])copy, 0, length);
-            var algorithm = new GeneticAlg<Chromosome>(){ Population = population };
-            var mutation = new BitflipMutation<Chromosome>(){ MutationFactor = 1.1 };
-
-            mutation.RunStep(algorithm);
-            bool eq = true;
-            StringBuilder msg = new StringBuilder(1000);
-            var _population = (Chromosome[])population;
-            var _copy = (Chromosome[])copy;
-            unsafe
-            {
-                fixed(Chromosome* ptr1 = _population)
-                fixed(Chromosome* ptr2 = _copy)
-                {                
-                    for(int i = 0; i < length; i++)
-                    {                        
-                        if(Chromosome.CheckEqualityUnsafe(&ptr1[i], &ptr2[i]))
-                        {
-                            eq = false;
-                            msg.AppendLine(_population[i].ToString());
-                            msg.AppendLine(_copy[i].ToString() + '\n');
-                        }
-                    }
-                }
-            }
-        }
+        }   
     }
 
     public class RandomMutation<T> : IMutation<T> where T: unmanaged, IChromosome
@@ -125,42 +83,7 @@ namespace Optimization
                     population[i].Repair();
                 }
             }
-        }
-
-        [Test]
-        static void TestRandomMutation()
-        {            
-            const int length = 10;
-            var population = new Population<Chromosome>(length).Init(new RandomInitialization());
-            var copy = new Population<Chromosome>(length);
-            Array.Copy((Chromosome[])population, 0, (Chromosome[])copy, 0, length);
-            var algorithm = new GeneticAlg<Chromosome>(){ Population = population };
-            var mutation = new RandomMutation<Chromosome>(){ MutationFactor = 1.1 };
-
-            mutation.RunStep(algorithm);
-            bool eq = true;
-            StringBuilder msg = new StringBuilder(1000);
-            var _population = (Chromosome[])population;
-            var _copy = (Chromosome[])copy;
-            unsafe
-            {
-                fixed(Chromosome* ptr1 = _population)
-                fixed(Chromosome* ptr2 = _copy)
-                {                
-                    for(int i = 0; i < length; i++)
-                    {
-                        if(Chromosome.CheckEqualityUnsafe(&ptr1[i], &ptr2[i]))
-                        {
-                            eq = false;
-                            msg.AppendLine(_population[i].ToString());
-                            msg.AppendLine(_copy[i].ToString() + '\n');
-                        }
-                    }
-                }
-            }
-
-            return (eq, msg.ToString());
-        }
+        }      
     }
 
     public class ScrambleMutation<T> : IMutation<T> where T: unmanaged, IChromosome
@@ -183,69 +106,27 @@ namespace Optimization
 
         public void RunStep(GeneticAlg<T> algorithm)
         {   
-            T[] population = (T[])algorithm.Population;
+            var population = algorithm.Population;
 
-            unsafe
+            for(int i = 0; i < population.Length; i++)
             {
-                fixed(T* chromosome = population)
+                if(MutationFactor > rand.NextDouble())
                 {
-                    for(int i = 0; i < population.Length; i++)
+                    ref var chromosome = ref population[i];
+                    var temp = chromosome;
+                    int offset = rand.Next(size - mutationSize);
+                    unsafe
                     {
-                        if(MutationFactor > rand.NextDouble())
-                        {                            
-                            int offset = rand.Next(size - mutationSize);
-                            Mutate(&chromosome[i], offset, rand);
-                        }
+                        byte* ptr = (byte*)temp + offset;
+                        int* ptr_as_int = (int*)ptr;
+                        ptr_as_int[0] ^= rand.Next();
+                        ptr_as_int[1] ^= rand.Next();
+                        ptr_as_int[2] ^= rand.Next();
                     }
+                    chromosome = temp;                    
+                    chromosome.Repair();                        
                 }
             }
-        }
-
-        unsafe void Mutate(T* chromosome, int offset, Random rand)
-        {
-            byte* ptr = (byte*)chromosome + offset;
-            int* ptr_as_int = (int*)ptr;
-            ptr_as_int[0] ^= rand.Next();
-            ptr_as_int[1] ^= rand.Next();
-            ptr_as_int[2] ^= rand.Next();
-
-            chromosome->Repair();
-        }
-
-        [Test]
-        static void TestScrambleMutation()
-        {            
-            const int length = 10;
-            var population = new Population<Chromosome>(length).Init(new RandomInitialization());
-            var copy = new Population<Chromosome>(length);
-            Array.Copy((Chromosome[])population, 0, (Chromosome[])copy, 0, length);
-            var algorithm = new GeneticAlg<Chromosome>(){ Population = population };
-            var mutation = new ScrambleMutation<Chromosome>(){ MutationFactor = 1.1 };
-
-            mutation.RunStep(algorithm);
-            bool eq = true;
-            StringBuilder msg = new StringBuilder(1000);
-            var _population = (Chromosome[])population;
-            var _copy = (Chromosome[])copy;
-            unsafe
-            {
-                fixed(Chromosome* ptr1 = _population)
-                fixed(Chromosome* ptr2 = _copy)
-                {                
-                    for(int i = 0; i < length; i++)
-                    {
-                        if(Chromosome.CheckEqualityUnsafe(&ptr1[i], &ptr2[i])) 
-                        {
-                            eq = false;
-                            msg.AppendLine(_population[i].ToString());
-                            msg.AppendLine(_copy[i].ToString() + '\n');
-                        }
-                    }                    
-                    
-                }
-            }
-
-            return (eq, msg.ToString());
         }
     }
 
