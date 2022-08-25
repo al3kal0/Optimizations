@@ -48,14 +48,14 @@ namespace Optimization
     /// <summary> Selects Parents proportional to fitness, repeats might happen... </summary>
     public class RouletteWheelSelection<T> : ISelection<T> where T: IChromosome
     {
-        Random rand = new Random();
+        Random rand = new();
 
         public void RunStep(GeneticAlg<T> algorithm)
         {
             var fitness = algorithm.PopulationFitness;
             var population = algorithm.Population;
-            var  matingpool = algorithm.MatingPool;
-            var parents = new Span<T>(matingpool, 0, matingpool.Length / 2);
+            var matingpool = algorithm.Matingpool;
+            var parents = matingpool[0..(matingpool.Length / 2)];
             int count = 0;
 
             // select randomly n chromosomes to store half of matingpool
@@ -185,7 +185,7 @@ namespace Optimization
         {
             var population = algorithm.Population;
             var matingpool = algorithm.Matingpool;
-            var parents = matingpool[0, (matingpool.Length / 2)];
+            var parents = matingpool[0..(matingpool.Length / 2)];
             sparseSet ??= new int[population.Length];
             int count = 0;
 

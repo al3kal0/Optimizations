@@ -57,7 +57,7 @@ namespace Optimization
     {
         int size;
         int genes;
-        Random rand = new Random();
+        Random rand = new();
         public double MutationFactor {get; set;} = 0.1;
 
         public RandomMutation()
@@ -90,7 +90,7 @@ namespace Optimization
     {
         int size;
         int genes;
-        int mutationSize;
+        const int MUTATION_SIZE = 12;
         Random rand = new Random();
         public double MutationFactor {get; set;} = 0.5;
 
@@ -100,7 +100,7 @@ namespace Optimization
             {
                 size = sizeof(T);
                 genes = size / sizeof(double);
-                mutationSize = 12; // sizeof(Mutation);
+                // mutationSize = 12; // sizeof(Mutation);
             }
         }
 
@@ -114,7 +114,7 @@ namespace Optimization
                 {
                     ref var chromosome = ref population[i];
                     var temp = chromosome;
-                    int offset = rand.Next(size - mutationSize);
+                    int offset = rand.Next(size - MUTATION_SIZE);
                     unsafe
                     {
                         byte* ptr = (byte*)temp + offset;

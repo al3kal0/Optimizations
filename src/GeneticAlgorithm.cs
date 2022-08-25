@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace Optimization
 {
     // [TestFixture]
-    public class GeneticAlg<T> where T: unmanaged, IChromosome
+    public class GeneticAlg<T> where T: unmanaged, IChromosome<V>
     {
         T[] population;
         T[] matingpool;

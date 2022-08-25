@@ -11,7 +11,7 @@ namespace Optimization
 
         public bool Terminate(GeneticAlg<T> algorithm)
         {
-            return generation++ > MaxGeneration;
+            return ++generation > MaxGeneration;
         }
     
     }        

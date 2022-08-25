@@ -23,7 +23,7 @@ namespace Optimization
             // one half of mating pool stores parents
             // while the other half stores offsprings; 
             var matingpool = algorithm.Matingpool;
-            int mean = matingpool.Length / 2;
+            var mean = matingpool.Length / 2;
             var parents = matingpool[0..mean];
             var offsprings = matingpool[mean..];
 
@@ -58,7 +58,7 @@ namespace Optimization
             // one half of mating pool stores parents
             // while the other half stores offsprings; 
             var matingpool = algorithm.Matingpool;
-            int mean = matingpool.Length / 2;
+            var mean = matingpool.Length / 2;
             var parents = matingpool[0..mean];
             var offsprings = matingpool[mean..];
 
@@ -125,7 +125,7 @@ namespace Optimization
             // one half of mating pool stores parents
             // while the other half stores offsprings; 
             var matingpool = algorithm.Matingpool;
-            int mean = matingpool.Length / 2;
+            var mean = matingpool.Length / 2;
             var parents = matingpool[0..mean];
             var offsprings = matingpool[mean..];
 
@@ -155,9 +155,8 @@ namespace Optimization
     {
         int size;
         int genes;
-        Random rand = new Random();
-        T[] MatingPool {get; set;}
-        public double crossFactor = 0.75;
+        Random rand = new();
+        double crossFactor = 0.75;
         public double CrossFactor
         {
             get => crossFactor;
@@ -183,7 +182,7 @@ namespace Optimization
             // one half of mating pool stores parents
             // while the other half stores offsprings; 
             var matingpool = algorithm.Matingpool;
-            int mean = matingpool.Length / 2;
+            var mean = matingpool.Length / 2;
             var parents = matingpool[0..mean];
             var offsprings = matingpool[mean..];
 
@@ -199,8 +198,8 @@ namespace Optimization
                 
                 for(int j = 0; i < genes; j++)
                 {
-                    ofspringA[j] = CrossFactor * parentA[j] + (1 - CrossFactor) * parentB[j];
-                    ofspringB[j] = (1 - CrossFactor) * parentA[j] + CrossFactor * parentB[j];
+                    offspringA[j] = CrossFactor * parentA[j] + (1 - CrossFactor) * parentB[j];
+                    offspringB[j] = (1 - CrossFactor) * parentA[j] + CrossFactor * parentB[j];
                 }
             }
         }
